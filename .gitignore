@@ -1,0 +1,18 @@
+# IDE / Editor
+.idea/
+*.iml
+.vscode/
+
+# Build outputs
+target/
+**/target/
+dist/
+**/dist/
+
+# Node dependencies
+node_modules/
+**/node_modules/
+
+# Logs & temp
+*.log
+.DS_Store
