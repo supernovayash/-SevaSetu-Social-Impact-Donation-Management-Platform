@@ -28,4 +28,14 @@ export const logisticsApi = {
     });
     return response.data;
   },
+
+  getMyAssignments: async () => {
+    const response = await api.get('/api/logistics/my-assignments');
+    return response.data;
+  },
+
+  getVolunteers: async () => {
+    const response = await api.get('/api/logistics/volunteers');
+    return response.data;
+  },
 };

@@ -446,35 +446,52 @@ public class LogisticsServiceImpl implements LogisticsService {
         return assignment;
     }
 
-    private LogisticsAssignmentResponse toResponse(
-            LogisticsAssignment assignment) {
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<LogisticsAssignmentResponse> getMyAssignments(String volunteerEmail) {
+        User user = getUser(volunteerEmail);
+        Volunteer volunteer = volunteerRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Volunteer record not found for user: " + volunteerEmail));
+
+        return assignmentRepository.findByVolunteerIdOrderByAssignedAtDesc(volunteer.getId())
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<Volunteer> getAvailableVolunteers() {
+        return volunteerRepository.findAll();
+    }
+
+    private LogisticsAssignmentResponse toResponse(LogisticsAssignment assignment) {
+        Donation donation = assignment.getDonation();
+        boolean isOpen = donation.getNeed() == null;
+        Institution inst = isOpen ? donation.getInstitution() : (donation.getNeed() != null ? donation.getNeed().getInstitution() : null);
+        String dropAddr = inst != null ? (inst.getInstitutionName() + ", " + inst.getAddress() + ", " + inst.getCity()) : null;
 
         return LogisticsAssignmentResponse.builder()
                 .id(assignment.getId())
-                .donationId(
-                        assignment.getDonation().getId()
-                )
-                .volunteerName(
-                        assignment.getVolunteer()
-                                .getUser()
-                                .getFullName()
-                )
-                .volunteerCity(
-                        assignment.getVolunteer()
-                                .getCity()
-                )
-                .status(
-                        assignment.getStatus()
-                )
-                .notes(
-                        assignment.getNotes()
-                )
-                .assignedAt(
-                        assignment.getAssignedAt()
-                )
-                .completedAt(
-                        assignment.getCompletedAt()
-                )
+                .donationId(donation.getId())
+                .donationType(donation.getType().name())
+                .amount(donation.getAmount())
+                .quantity(donation.getQuantity())
+                .unit(donation.getUnit())
+                .category(donation.getCategory() != null ? donation.getCategory().name() : (donation.getNeed() != null ? donation.getNeed().getCategory().name() : null))
+                .description(donation.getDescription())
+                .needTitle(donation.getNeed() != null ? donation.getNeed().getTitle() : "Open Donation")
+                .donorName(donation.getDonor().getFullName())
+                .donorPhone(donation.getDonor().getPhone())
+                .pickupAddress(donation.getPickupAddress())
+                .institutionName(inst != null ? inst.getInstitutionName() : null)
+                .dropAddress(dropAddr)
+                .volunteerName(assignment.getVolunteer().getUser().getFullName())
+                .volunteerCity(assignment.getVolunteer().getCity())
+                .status(assignment.getStatus())
+                .notes(assignment.getNotes())
+                .assignedAt(assignment.getAssignedAt())
+                .completedAt(assignment.getCompletedAt())
                 .build();
     }
 }

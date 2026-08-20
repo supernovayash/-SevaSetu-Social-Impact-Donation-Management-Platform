@@ -50,6 +50,9 @@ public class Donation {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(columnDefinition = "TEXT")
+    private String pickupAddress;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private DonationStatus status;

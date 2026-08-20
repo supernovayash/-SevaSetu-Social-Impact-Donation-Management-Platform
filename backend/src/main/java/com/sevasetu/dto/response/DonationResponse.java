@@ -26,4 +26,7 @@ public class DonationResponse {
     private boolean openDonation;
     private NeedCategory category;
     private String description;
+    private String pickupAddress;
+    private String donorPhone;
+    private String dropAddress;
 }

@@ -22,4 +22,7 @@ public interface DonationRepository extends JpaRepository<Donation, Long> {
     @Query("UPDATE Donation d SET d.institution = :institution, d.status = 'CONFIRMED' " +
             "WHERE d.id = :donationId AND d.need IS NULL AND d.institution IS NULL")
     int claimOpenDonation(@Param("donationId") Long donationId, @Param("institution") Institution institution);
+
+    @Query("SELECT d FROM Donation d WHERE d.need.institution.id = :instId OR d.institution.id = :instId ORDER BY d.createdAt DESC")
+    List<Donation> findByInstitutionId(@Param("instId") Long instId);
 }

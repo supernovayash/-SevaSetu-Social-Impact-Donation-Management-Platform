@@ -67,4 +67,10 @@ public class DonationController {
     public List<DonationResponse> getMyDonations(Authentication authentication) {
         return donationService.getMyDonations(authentication.getName());
     }
+
+    @GetMapping("/institution")
+    @PreAuthorize("hasRole('INSTITUTION_ADMIN')")
+    public List<DonationResponse> getInstitutionDonations(Authentication authentication) {
+        return donationService.getInstitutionDonations(authentication.getName());
+    }
 }

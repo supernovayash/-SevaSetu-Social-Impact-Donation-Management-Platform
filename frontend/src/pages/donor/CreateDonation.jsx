@@ -26,6 +26,7 @@ const CreateDonation = () => {
   const [unit, setUnit] = useState('pieces');
   const [category, setCategory] = useState('CLOTHES');
   const [description, setDescription] = useState('');
+  const [pickupAddress, setPickupAddress] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const navigate = useNavigate();
@@ -56,6 +57,7 @@ const CreateDonation = () => {
         quantity: donationType === 'GOODS' ? Number(quantity) : undefined,
         amount: donationType === 'MONEY' ? Number(amount) : undefined,
         unit: donationType === 'GOODS' ? unit : undefined,
+        pickupAddress: pickupAddress || undefined,
       };
 
       if (donationModel === 'NEED') {
@@ -310,6 +312,18 @@ const CreateDonation = () => {
                 />
               </div>
             )}
+
+            {/* PICKUP ADDRESS FIELD */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Pickup Address & Contact Details</label>
+              <textarea
+                rows={2}
+                value={pickupAddress}
+                onChange={(e) => setPickupAddress(e.target.value)}
+                placeholder="Enter full pickup address and contact info for volunteer collection..."
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
 
             <button
               type="submit"

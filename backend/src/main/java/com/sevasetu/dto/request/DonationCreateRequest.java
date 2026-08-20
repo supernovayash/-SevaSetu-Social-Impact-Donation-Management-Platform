@@ -20,4 +20,5 @@ public class DonationCreateRequest {
     // NEW: required only when needId is null — see DonationServiceImpl.createDonation
     private NeedCategory category;
     private String description;
+    private String pickupAddress;
 }

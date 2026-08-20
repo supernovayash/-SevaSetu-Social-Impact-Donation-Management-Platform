@@ -57,6 +57,7 @@ public class DonationServiceImpl implements DonationService {
                 .amount(request.getAmount())
                 .quantity(request.getQuantity())
                 .unit(request.getUnit())
+                .pickupAddress(request.getPickupAddress())
                 .status(DonationStatus.PLEDGED);
 
         if (request.getNeedId() != null) {
@@ -223,17 +224,33 @@ public class DonationServiceImpl implements DonationService {
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<DonationResponse> getInstitutionDonations(String institutionAdminEmail) {
+        User actor = userRepository.findByEmail(institutionAdminEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        Institution institution = institutionRepository.findByUserId(actor.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Institution not found for this admin"));
+
+        return donationRepository.findByInstitutionId(institution.getId())
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     private DonationResponse toResponse(Donation donation) {
         boolean isOpen = donation.getNeed() == null;
+        Institution inst = isOpen ? donation.getInstitution() : (donation.getNeed() != null ? donation.getNeed().getInstitution() : null);
+        String dropAddr = inst != null ? (inst.getInstitutionName() + ", " + inst.getAddress() + ", " + inst.getCity()) : null;
 
         return DonationResponse.builder()
                 .id(donation.getId())
-                .needId(isOpen ? null : donation.getNeed().getId())
-                .needTitle(isOpen ? null : donation.getNeed().getTitle())
+                .needId(isOpen ? null : (donation.getNeed() != null ? donation.getNeed().getId() : null))
+                .needTitle(isOpen ? null : (donation.getNeed() != null ? donation.getNeed().getTitle() : null))
                 .donorName(donation.getDonor().getFullName())
-                .institutionName(isOpen
-                        ? (donation.getInstitution() != null ? donation.getInstitution().getInstitutionName() : null)
-                        : donation.getNeed().getInstitution().getInstitutionName())
+                .donorPhone(donation.getDonor().getPhone())
+                .institutionName(inst != null ? inst.getInstitutionName() : null)
+                .dropAddress(dropAddr)
                 .type(donation.getType())
                 .amount(donation.getAmount())
                 .quantity(donation.getQuantity())
@@ -243,6 +260,7 @@ public class DonationServiceImpl implements DonationService {
                 .openDonation(isOpen)
                 .category(donation.getCategory())
                 .description(donation.getDescription())
+                .pickupAddress(donation.getPickupAddress())
                 .build();
     }
 }

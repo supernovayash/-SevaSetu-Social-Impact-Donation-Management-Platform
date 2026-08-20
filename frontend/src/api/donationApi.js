@@ -32,4 +32,9 @@ export const donationApi = {
     });
     return response.data;
   },
+
+  getInstitutionDonations: async () => {
+    const response = await api.get('/api/donations/institution');
+    return response.data;
+  },
 };

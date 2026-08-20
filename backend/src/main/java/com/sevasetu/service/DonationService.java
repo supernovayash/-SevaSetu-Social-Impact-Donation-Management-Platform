@@ -16,4 +16,5 @@ public interface DonationService {
     // NEW
     List<DonationResponse> getOpenDonations();
     DonationResponse claimOpenDonation(Long donationId, String institutionAdminEmail);
+    List<DonationResponse> getInstitutionDonations(String institutionAdminEmail);
 }

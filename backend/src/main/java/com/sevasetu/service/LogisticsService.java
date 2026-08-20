@@ -26,4 +26,10 @@ public interface LogisticsService {
             SubmitProofRequest request,
             String actorEmail
     );
+
+    java.util.List<LogisticsAssignmentResponse> getMyAssignments(
+            String volunteerEmail
+    );
+
+    java.util.List<com.sevasetu.entity.Volunteer> getAvailableVolunteers();
 }

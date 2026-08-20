@@ -66,4 +66,16 @@ public class LogisticsController {
                 authentication.getName()
         );
     }
+
+    @GetMapping("/my-assignments")
+    @PreAuthorize("hasRole('VOLUNTEER')")
+    public java.util.List<LogisticsAssignmentResponse> getMyAssignments(Authentication authentication) {
+        return logisticsService.getMyAssignments(authentication.getName());
+    }
+
+    @GetMapping("/volunteers")
+    @PreAuthorize("hasAnyRole('INSTITUTION_ADMIN', 'SUPER_ADMIN')")
+    public java.util.List<com.sevasetu.entity.Volunteer> getAvailableVolunteers() {
+        return logisticsService.getAvailableVolunteers();
+    }
 }

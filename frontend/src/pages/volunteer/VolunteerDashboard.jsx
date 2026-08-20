@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Truck, MapPin, Building2, Calendar, FileText, CheckCircle2, Clock, ShieldCheck } from 'lucide-react';
+import { Truck, MapPin, Building2, User, Phone, FileText, CheckCircle2, Navigation } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import StatusBadge from '../../components/common/StatusBadge';
 import ConfirmModal from '../../components/ConfirmModal';
 import { logisticsApi } from '../../api/logisticsApi';
-import { donationApi } from '../../api/donationApi';
 import { useToast } from '../../context/ToastContext';
 
 const VolunteerDashboard = () => {
@@ -20,10 +19,11 @@ const VolunteerDashboard = () => {
   const fetchAssignments = async () => {
     setLoading(true);
     try {
-      const history = await donationApi.getMyHistory();
-      setTasks(Array.isArray(history) ? history : []);
+      const data = await logisticsApi.getMyAssignments();
+      setTasks(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load volunteer pickup assignments:', err);
+      showToast('Failed to load pickup assignments.', 'error');
     } finally {
       setLoading(false);
     }
@@ -50,11 +50,11 @@ const VolunteerDashboard = () => {
   };
 
   return (
-    <DashboardLayout title="Volunteer Pickup Portal" subtitle="Manage assigned pickup tasks and update status once collected">
+    <DashboardLayout title="Volunteer Pickup Portal" subtitle="Manage assigned pickup tasks and view pickup/drop-off directions">
       <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-950 font-medium flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Truck className="w-5 h-5 text-amber-600 shrink-0" />
-          <span>Volunteers collect pledged items and deliver them to institution drop-off points. Mark items picked up upon physical collection.</span>
+          <span>Collect pledged items from donors and deliver them to institution drop-off locations. Mark items as picked up upon physical collection.</span>
         </div>
       </div>
 
@@ -68,38 +68,60 @@ const VolunteerDashboard = () => {
             const isDelivered = task.status === 'DELIVERED' || task.status === 'UTILIZED';
 
             return (
-              <div key={task.id} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <span className="p-2 rounded-xl bg-amber-100 text-amber-800 font-bold text-xs">
-                      Pickup #{task.id}
+              <div key={task.id} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4 flex flex-col justify-between">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-bold text-xs uppercase">
+                      Assignment #{task.id} (Donation #{task.donationId})
                     </span>
+                    <StatusBadge status={task.status} />
                   </div>
-                  <StatusBadge status={task.status} />
+
+                  <div>
+                    <div className="text-lg font-extrabold text-slate-900">
+                      {task.donationType === 'MONEY' ? `₹${task.amount?.toLocaleString('en-IN')}` : `${task.quantity} ${task.unit}`} — {task.needTitle || task.description || 'Donation Item'}
+                    </div>
+                    <div className="text-xs text-slate-500 font-medium mt-1">
+                      Donor: <strong className="text-slate-800">{task.donorName || 'Generous Donor'}</strong>
+                      {task.donorPhone && <span className="ml-1 text-slate-400">({task.donorPhone})</span>}
+                    </div>
+                  </div>
+
+                  {/* Pickup Address Card */}
+                  <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200 text-xs space-y-1">
+                    <div className="flex items-center gap-1.5 text-emerald-900 font-bold">
+                      <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>PICKUP ADDRESS (FROM DONOR):</span>
+                    </div>
+                    <p className="text-slate-700 font-medium pl-5">
+                      {task.pickupAddress || 'Address not provided by donor (Contact donor via phone)'}
+                    </p>
+                  </div>
+
+                  {/* Drop Address Card */}
+                  <div className="p-3 bg-indigo-50/60 rounded-xl border border-indigo-200 text-xs space-y-1">
+                    <div className="flex items-center gap-1.5 text-indigo-900 font-bold">
+                      <Building2 className="w-4 h-4 text-indigo-600 shrink-0" />
+                      <span>DROP ADDRESS (TO INSTITUTION):</span>
+                    </div>
+                    <p className="text-slate-700 font-medium pl-5">
+                      {task.dropAddress || task.institutionName || 'Target Institution Drop-off Point'}
+                    </p>
+                  </div>
+
+                  {task.notes && (
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-600 flex items-start gap-2">
+                      <FileText className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                      <span>Dispatch Note: "{task.notes}"</span>
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-1">
-                  <div className="text-lg font-extrabold text-slate-900">
-                    {task.type === 'MONEY' ? `₹${task.amount}` : `${task.quantity} ${task.unit}`} — {task.description || 'Donation Item'}
-                  </div>
-                  <div className="text-xs text-slate-500 font-medium flex items-center gap-1">
-                    <Building2 className="w-3.5 h-3.5" />
-                    <span>Target Institution: {task.institutionName || 'NGO Partner'}</span>
-                  </div>
-                </div>
-
-                {task.notes && (
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-600 flex items-start gap-2">
-                    <FileText className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                    <span>"{task.notes}"</span>
-                  </div>
-                )}
-
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                   {isAssigned && (
                     <button
-                      onClick={() => setPickupTargetId(task.id)}
-                      className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-600/20 transition-all flex items-center justify-center gap-2"
+                      onClick={() => setPickupTargetId(task.donationId)}
+                      className="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-600/20 transition-all flex items-center justify-center gap-2"
                     >
                       <CheckCircle2 className="w-4 h-4" />
                       <span>Mark as Picked Up</span>
@@ -108,7 +130,7 @@ const VolunteerDashboard = () => {
 
                   {isPickedUp && (
                     <div className="w-full text-center py-2.5 bg-purple-50 text-purple-700 border border-purple-200 rounded-xl text-xs font-bold">
-                      ✓ Picked Up — In Transit to Institution
+                      ✓ Picked Up — In Transit to Institution Drop Address
                     </div>
                   )}
 
@@ -124,7 +146,7 @@ const VolunteerDashboard = () => {
         </div>
       ) : (
         <div className="bg-white rounded-2xl p-8 text-center text-slate-500 border border-slate-200 text-xs">
-          No pickup assignments currently assigned to your account.
+          No pickup assignments currently assigned to your volunteer account.
         </div>
       )}
 
@@ -134,7 +156,7 @@ const VolunteerDashboard = () => {
         onClose={() => setPickupTargetId(null)}
         onConfirm={handleConfirmPickup}
         title="Mark Item as Picked Up"
-        message={`Confirm that you have physically collected donation #DON-${pickupTargetId} from the donor location.`}
+        message={`Confirm that you have physically collected donation #DON-${pickupTargetId} from the donor's pickup address.`}
         confirmText="Confirm Pickup"
         loading={markingPickup}
       />
