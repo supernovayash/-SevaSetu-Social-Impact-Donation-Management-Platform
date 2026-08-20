@@ -31,5 +31,14 @@ public interface LogisticsService {
             String volunteerEmail
     );
 
-    java.util.List<com.sevasetu.entity.Volunteer> getAvailableVolunteers();
+    java.util.List<com.sevasetu.dto.response.VolunteerResponse> getAvailableVolunteers();
+
+    java.util.List<com.sevasetu.dto.response.DonationResponse> getAvailablePickups(
+            String volunteerEmail
+    );
+
+    LogisticsAssignmentResponse claimPickup(
+            Long donationId,
+            String volunteerEmail
+    );
 }

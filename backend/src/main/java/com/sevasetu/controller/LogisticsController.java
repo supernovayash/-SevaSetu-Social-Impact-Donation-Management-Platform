@@ -75,7 +75,19 @@ public class LogisticsController {
 
     @GetMapping("/volunteers")
     @PreAuthorize("hasAnyRole('INSTITUTION_ADMIN', 'SUPER_ADMIN')")
-    public java.util.List<com.sevasetu.entity.Volunteer> getAvailableVolunteers() {
+    public java.util.List<com.sevasetu.dto.response.VolunteerResponse> getAvailableVolunteers() {
         return logisticsService.getAvailableVolunteers();
+    }
+
+    @GetMapping("/available-pickups")
+    @PreAuthorize("hasRole('VOLUNTEER')")
+    public java.util.List<com.sevasetu.dto.response.DonationResponse> getAvailablePickups(Authentication authentication) {
+        return logisticsService.getAvailablePickups(authentication.getName());
+    }
+
+    @PostMapping("/claim/{donationId}")
+    @PreAuthorize("hasRole('VOLUNTEER')")
+    public LogisticsAssignmentResponse claimPickup(@PathVariable Long donationId, Authentication authentication) {
+        return logisticsService.claimPickup(donationId, authentication.getName());
     }
 }

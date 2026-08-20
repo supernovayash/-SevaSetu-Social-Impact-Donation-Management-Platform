@@ -38,4 +38,14 @@ export const logisticsApi = {
     const response = await api.get('/api/logistics/volunteers');
     return response.data;
   },
+
+  getAvailablePickups: async () => {
+    const response = await api.get('/api/logistics/available-pickups');
+    return response.data;
+  },
+
+  claimPickup: async (donationId) => {
+    const response = await api.post(`/api/logistics/claim/${donationId}`);
+    return response.data;
+  },
 };

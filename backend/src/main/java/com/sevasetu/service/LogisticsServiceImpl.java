@@ -2,8 +2,10 @@ package com.sevasetu.service;
 
 import com.sevasetu.dto.request.AssignVolunteerRequest;
 import com.sevasetu.dto.request.SubmitProofRequest;
+import com.sevasetu.dto.response.DonationResponse;
 import com.sevasetu.dto.response.LogisticsAssignmentResponse;
 import com.sevasetu.dto.response.ProofOfImpactResponse;
+import com.sevasetu.dto.response.VolunteerResponse;
 import com.sevasetu.entity.Donation;
 import com.sevasetu.entity.Institution;
 import com.sevasetu.entity.LogisticsAssignment;
@@ -461,8 +463,84 @@ public class LogisticsServiceImpl implements LogisticsService {
 
     @Override
     @Transactional(readOnly = true)
-    public java.util.List<Volunteer> getAvailableVolunteers() {
-        return volunteerRepository.findAll();
+    public java.util.List<VolunteerResponse> getAvailableVolunteers() {
+        return volunteerRepository.findAll()
+                .stream()
+                .map(v -> VolunteerResponse.builder()
+                        .id(v.getId())
+                        .userId(v.getUser().getId())
+                        .fullName(v.getUser().getFullName())
+                        .email(v.getUser().getEmail())
+                        .phone(v.getUser().getPhone())
+                        .city(v.getCity())
+                        .vehicleAvailable(v.isVehicleAvailable())
+                        .build())
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<DonationResponse> getAvailablePickups(String volunteerEmail) {
+        return donationRepository.findAll().stream()
+                .filter(d -> d.getStatus() == DonationStatus.CONFIRMED)
+                .filter(d -> assignmentRepository.findByDonationId(d.getId()).isEmpty())
+                .map(this::toDonationResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public LogisticsAssignmentResponse claimPickup(Long donationId, String volunteerEmail) {
+        User user = getUser(volunteerEmail);
+        Volunteer volunteer = volunteerRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Volunteer record not found for user: " + volunteerEmail));
+
+        Donation donation = donationRepository.findById(donationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Donation not found"));
+
+        if (donation.getStatus() != DonationStatus.CONFIRMED) {
+            throw new InvalidDonationStateException("Only CONFIRMED donations can be claimed for pickup");
+        }
+
+        if (assignmentRepository.findByDonationId(donation.getId()).isPresent()) {
+            throw new InvalidDonationStateException("This donation already has a volunteer assigned");
+        }
+
+        LogisticsAssignment assignment = LogisticsAssignment.builder()
+                .donation(donation)
+                .volunteer(volunteer)
+                .notes("Self-assigned by volunteer " + user.getFullName())
+                .status(AssignmentStatus.ASSIGNED)
+                .build();
+
+        LogisticsAssignment saved = assignmentRepository.save(assignment);
+        return toResponse(saved);
+    }
+
+    private DonationResponse toDonationResponse(Donation donation) {
+        boolean isOpen = donation.getNeed() == null;
+        Institution inst = isOpen ? donation.getInstitution() : (donation.getNeed() != null ? donation.getNeed().getInstitution() : null);
+        String dropAddr = inst != null ? (inst.getInstitutionName() + ", " + inst.getAddress() + ", " + inst.getCity()) : null;
+
+        return DonationResponse.builder()
+                .id(donation.getId())
+                .needId(isOpen ? null : (donation.getNeed() != null ? donation.getNeed().getId() : null))
+                .needTitle(isOpen ? null : (donation.getNeed() != null ? donation.getNeed().getTitle() : null))
+                .donorName(donation.getDonor().getFullName())
+                .donorPhone(donation.getDonor().getPhone())
+                .institutionName(inst != null ? inst.getInstitutionName() : null)
+                .dropAddress(dropAddr)
+                .type(donation.getType())
+                .amount(donation.getAmount())
+                .quantity(donation.getQuantity())
+                .unit(donation.getUnit())
+                .status(donation.getStatus())
+                .createdAt(donation.getCreatedAt())
+                .openDonation(isOpen)
+                .category(donation.getCategory())
+                .description(donation.getDescription())
+                .pickupAddress(donation.getPickupAddress())
+                .build();
     }
 
     private LogisticsAssignmentResponse toResponse(LogisticsAssignment assignment) {

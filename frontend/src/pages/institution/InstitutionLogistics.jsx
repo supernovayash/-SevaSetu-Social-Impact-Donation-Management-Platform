@@ -265,7 +265,7 @@ const InstitutionLogistics = () => {
                   <option value="">-- Choose Registered Volunteer --</option>
                   {volunteers.map((v) => (
                     <option key={v.id} value={v.id}>
-                      {v.user?.fullName || `Volunteer #${v.id}`} ({v.city}) {v.vehicleAvailable ? '🚗' : ''}
+                      {v.fullName || `Volunteer #${v.id}`} ({v.city || 'N/A'}) {v.phone ? `• ${v.phone}` : ''} {v.vehicleAvailable ? '🚗' : ''}
                     </option>
                   ))}
                 </select>
